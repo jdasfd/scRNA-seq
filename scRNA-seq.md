@@ -152,3 +152,25 @@ ls *.fastq.gz |
         '
 ```
 
+### Running via cellranger count
+
+```bash
+mkdir -p ~/data/scrna/result
+cd ~/data/scrna/result
+
+ls ../sra/*.fastq.gz |
+    perl -pe 's/^.*(SRR.+?)_.*$/$1/' |
+    tsv-uniq |
+    parallel -j 1 -k '
+        cellranger count --id {} \
+            --sample={} \
+            --transcriptome=/home/jyq/data/scrna/GENOME/Atha \
+            --fastqs=/home/jyq/data/scrna/sra \
+            --localcores=16 --no-bam --nosecondary
+    '
+```
+
+## References
+
+- [cellranger mkgtf and mkref](https://blog.csdn.net/flashan_shensanceng/article/details/115718337)
+- [common mkref errors](https://kb.10xgenomics.com/hc/en-us/articles/4707448154381-Common-mkref-errors-when-building-custom-reference-from-NCBI-UCSC-or-RefSeq-genomes)
