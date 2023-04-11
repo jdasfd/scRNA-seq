@@ -81,3 +81,74 @@ aria2c -j 4 -x 4 -s 2 --file-allocation=none -c -i ena_info.ftp.txt
 
 md5sum --check ena_info.md5.txt
 ```
+
+### Preparing data and plant ref
+
+- Building Ref genome
+
+It is recommended by 10xgenomics that using ensembl will match the pipeline of cellranger. Go and check the [common ref errors](https://kb.10xgenomics.com/hc/en-us/articles/4707448154381-Common-mkref-errors-when-building-custom-reference-from-NCBI-UCSC-or-RefSeq-genomes).
+
+```bash
+mkdir -p ~/data/scrna/GENOME
+cd ~/data/scrna/GENOME
+
+# genome
+wget https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-56/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz
+# gtf
+wget https://ftp.ensemblgenomes.ebi.ac.uk/pub/plants/release-56/gtf/arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.56.gtf.gz
+# decompress them
+gzip -d *
+# rename
+mv Arabidopsis_thaliana.TAIR10.dna.toplevel.fa Atha.fa
+mv Arabidopsis_thaliana.TAIR10.56.gtf Atha.gtf
+
+# remove those lines that strand info is ?
+#cat Atha.gtf |
+#    perl -nlae '
+#        next if $F[6] =~ /\?/;
+#        next if $F[9] =~ /DA397_mgp3\d/;
+#        print;
+#    ' > tmp \
+#    && mv tmp Atha.gtf
+
+# cellranger will output the following mistake
+#_csv.Error: field larger than field limit (131072)
+vim /home/jyq/share/cellranger-7.1.0/lib/python/cellranger/reference.py
+# copy following lines and add into it
+#csv.field_size_limit(500 * 1024 * 1024)
+
+# cellranger only support Atha.gtf
+cellranger mkgtf Atha.gtf Atha.filtered.gtf \
+    --attribute=gene_biotype:protein_coding
+
+# mkref
+cellranger mkref \
+    --genome=Atha \
+    --fasta=./Atha.fa \
+    --genes=./Atha.filtered.gtf \
+    --nthreads=6 --memgb=64
+
+#...
+#>>> Reference successfully created! <<<
+#
+#You can now specify this reference on the command line:
+#cellranger --transcriptome=/home/jyq/data/scrna/GENOME/Atha ...
+```
+
+- fastq files acquired from SRA
+
+Rename them to standard name in order to be accepted by cellranger pipeline.
+
+```bash
+cd ~/data/scrna/sra
+
+# rename _1,_2
+ls *.fastq.gz |
+    perl -pe 's/_.+$//' |
+    tsv-uniq |
+    parallel -j 1 -k '
+        mv {}_1.fastq.gz {}_S1_L001_R1_001.fastq.gz
+        mv {}_2.fastq.gz {}_S1_L001_R2_001.fastq.gz
+        '
+```
+
