@@ -38,6 +38,13 @@ cellranger -h
 cellranger-atac -h
 ```
 
+- Other software
+
+```bash
+# alignment
+brew install kallisto
+```
+
 ## Data collection
 
 ### Downloading data
@@ -170,7 +177,22 @@ ls ../sra/*.fastq.gz |
     '
 ```
 
+
 ## References
 
 - [cellranger mkgtf and mkref](https://blog.csdn.net/flashan_shensanceng/article/details/115718337)
 - [common mkref errors](https://kb.10xgenomics.com/hc/en-us/articles/4707448154381-Common-mkref-errors-when-building-custom-reference-from-NCBI-UCSC-or-RefSeq-genomes)
+
+- PlantscRNAdb
+
+```bash
+mkdir -p ~/data/scrna/DB
+cd ~/data/scrna/DB
+
+wget http://ibi.zju.edu.cn/plantscrnadb/download/GSE114615.zip
+unzip GSE114615.zip
+```
+
+```R
+options(repos='http://cran.rstudio.com/')
+```
